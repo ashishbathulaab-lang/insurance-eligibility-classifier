@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insurance Eligibility Prediction System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-predict {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-reset {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-reset:hover {
+            background: #e0e0e0;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result.eligible {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+
+        .result.not-eligible {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+
+        .result h2 {
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .result-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner.show {
+            display: block;
+        }
+
+        .spinner::after {
+            content: "";
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            color: #0c5aa0;
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 13px;
+            margin-top: 15px;
+        }
+
+        .disease-help {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .result-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Insurance Eligibility Prediction</h1>
+            <p>Predict patient insurance eligibility based on medical records</p>
+        </div>
+
+        <form id="predictionForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="age">Patient Age (years) *</label>
+                    <input type="number" id="age" name="age" step="0.1" min="1" max="120" placeholder="e.g., 45.5" required>
+                    <small class="disease-help">Range: 1 - 120 years</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="gender">Gender *</label>
+                    <select id="gender" name="gender" required>
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="icdFrequency">ICD Code Frequency *</label>
+                    <input type="number" id="icdFrequency" name="icd_frequency" min="1" max="683" placeholder="e.g., 15" required>
+                    <small class="disease-help">Range: 1 - 683 (count of diagnoses)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="cptFrequency">CPT Code Frequency *</label>
+                    <input type="number" id="cptFrequency" name="cpt_frequency" min="1" max="1815" placeholder="e.g., 8" required>
+                    <small class="disease-help">Range: 1 - 1815 (count of procedures)</small>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="month">Month of Approval *</label>
+                    <select id="month" name="month" required>
+                        <option value="">Select Month</option>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                    </select>
+                    <small class="disease-help">Range: 1 - 6 (Jan - Jun)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="disease">Disease/Condition (Optional)</label>
+                    <input type="text" id="disease" name="disease" placeholder="e.g., Back Pain, Diabetes">
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>ℹ️ Note:</strong> This model predicts based on medical coding frequencies and demographics. Actual eligibility determination should involve human review.
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn-predict">Get Prediction</button>
+                <button type="reset" class="btn-reset">Clear Form</button>
+            </div>
+        </form>
+
+        <div class="spinner" id="spinner"></div>
+
+        <div class="error" id="error"></div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('predictionForm');
+        const spinner = document.getElementById('spinner');
+        const errorBox = document.getElementById('error');
+        const resultBox = document.getElementById('result');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Clear previous results
+            errorBox.classList.remove('show');
+            resultBox.classList.remove('show');
+
+            // Show spinner
+            spinner.classList.add('show');
+
+            try {
+                // Collect form data
+                const formData = {
+                    age: parseFloat(document.getElementById('age').value),
+                    gender: document.getElementById('gender').value,
+                    icd_frequency: parseInt(document.getElementById('icdFrequency').value),
+                    cpt_frequency: parseInt(document.getElementById('cptFrequency').value),
+                    month: parseInt(document.getElementById('month').value),
+                    disease: document.getElementById('disease').value
+                };
+
+                // Make API request
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                spinner.classList.remove('show');
+
+                if (response.ok) {
+                    displayResult(data);
+                } else {
+                    displayError(data.error || 'Prediction failed');
+                }
+            } catch (error) {
+                spinner.classList.remove('show');
+                displayError('Connection error: ' + error.message);
+            }
+        });
+
+        function displayResult(data) {
+            const eligible = data.eligible;
+            const resultClass = eligible ? 'eligible' : 'not-eligible';
+            const statusIcon = eligible ? '✅' : '❌';
+            const confidence = eligible ? data.confidence_eligible : data.confidence_not_eligible;
+
+            const html = `
+                <h2>${statusIcon} ${data.eligibility_status}</h2>
+                <div class="result-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Confidence Level</div>
+                        <div class="detail-value">${(confidence * 100).toFixed(2)}%</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Risk Score</div>
+                        <div class="detail-value">${(data.risk_score * 100).toFixed(2)}%</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Age</div>
+                        <div class="detail-value">${data.input_data.age} years</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Gender</div>
+                        <div class="detail-value">${data.input_data.gender}</div>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${confidence * 100}%"></div>
+                </div>
+                <div class="info-box" style="margin-top: 15px; background: #f5f5f5; border-left-color: #666; color: #333;">
+                    <strong>Recommendation:</strong> 
+                    ${eligible 
+                        ? 'Patient is predicted to be ELIGIBLE for insurance. Proceed with application.' 
+                        : 'Patient is predicted to NOT BE ELIGIBLE. Review eligibility criteria or consider additional documentation.'}
+                </div>
+            `;
+
+            resultBox.className = `result show ${resultClass}`;
+            resultBox.innerHTML = html;
+        }
+
+        function displayError(message) {
+            errorBox.classList.add('show');
+            errorBox.innerHTML = `<strong>Error:</strong> ${message}`;
+        }
+
+        // Set default values for demo
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('age').value = '45.5';
+            document.getElementById('gender').value = 'Male';
+            document.getElementById('icdFrequency').value = '15';
+            document.getElementById('cptFrequency').value = '8';
+            document.getElementById('month').value = '6';
+            document.getElementById('disease').value = 'Back Pain';
+        });
+    </script>
+</body>
+</html>
