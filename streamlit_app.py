@@ -104,15 +104,44 @@ gender = st.radio(
     horizontal=True
 )
 
-# Disease/ICD input - simplified to ask for disease frequency
-disease_frequency = st.number_input(
-    "Disease Frequency",
-    min_value=1,
-    max_value=683,
-    value=50,
-    step=1,
-    help="How common is this disease in medical records"
+# Service Name input - dropdown with common services
+service_options = [
+    "Select a service...",
+    "Radiology",
+    "Surgery",
+    "Physical Therapy",
+    "Laboratory Tests",
+    "Cardiology",
+    "Orthopedics",
+    "Neurology",
+    "Dermatology",
+    "Other"
+]
+
+service_name = st.selectbox(
+    "Service Name",
+    options=service_options,
+    help="Select the medical service for eligibility check"
 )
+
+# Map service names to frequency values for model prediction
+service_frequency_map = {
+    "Radiology": 100,
+    "Surgery": 200,
+    "Physical Therapy": 50,
+    "Laboratory Tests": 150,
+    "Cardiology": 120,
+    "Orthopedics": 110,
+    "Neurology": 80,
+    "Dermatology": 60,
+    "Other": 75
+}
+
+# Get frequency value based on service
+if service_name == "Select a service...":
+    service_frequency = 100
+else:
+    service_frequency = service_frequency_map[service_name]
 
 # Default values for fields we're not asking about
 cpt_frequency = 300  # Default procedure frequency
@@ -122,34 +151,38 @@ month = 3  # Default month
 st.markdown("---")
 
 if st.button("🔍 Check Eligibility", use_container_width=True):
-    # Prepare input data
-    gender_encoded = 1 if gender == "Male" else 0
-    
-    input_data = np.array([[age, gender_encoded, disease_frequency, cpt_frequency, month]])
-    
-    # Scale input
-    input_scaled = scaler.transform(input_data)
-    
-    # Make prediction
-    prediction = model.predict(input_scaled)[0]
-    probability = model.predict_proba(input_scaled)[0]
-    
-    # Display results
-    st.markdown("")
-    
-    if prediction == 1:
-        st.markdown("""
-            <div class="prediction-eligible">
-            ✅ APPROVED
-            </div>
-        """, unsafe_allow_html=True)
-        st.success(f"Insurance Eligibility: **APPROVED** (Confidence: {max(probability) * 100:.1f}%)")
+    # Validate that a service is selected
+    if service_name == "Select a service...":
+        st.error("❌ Please select a service to check eligibility")
     else:
-        st.markdown("""
-            <div class="prediction-not-eligible">
-            ❌ NOT APPROVED
-            </div>
-        """, unsafe_allow_html=True)
-        st.error(f"Insurance Eligibility: **NOT APPROVED** (Confidence: {max(probability) * 100:.1f}%)")
+        # Prepare input data
+        gender_encoded = 1 if gender == "Male" else 0
+        
+        input_data = np.array([[age, gender_encoded, service_frequency, cpt_frequency, month]])
+        
+        # Scale input
+        input_scaled = scaler.transform(input_data)
+        
+        # Make prediction
+        prediction = model.predict(input_scaled)[0]
+        probability = model.predict_proba(input_scaled)[0]
+        
+        # Display results
+        st.markdown("")
+        
+        if prediction == 1:
+            st.markdown("""
+                <div class="prediction-eligible">
+                ✅ APPROVED
+                </div>
+            """, unsafe_allow_html=True)
+            st.success(f"Insurance Eligibility: **APPROVED** (Confidence: {max(probability) * 100:.1f}%)")
+        else:
+            st.markdown("""
+                <div class="prediction-not-eligible">
+                ❌ NOT APPROVED
+                </div>
+            """, unsafe_allow_html=True)
+            st.error(f"Insurance Eligibility: **NOT APPROVED** (Confidence: {max(probability) * 100:.1f}%)")
     
 
